@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能投标评分系统</title>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #607D8B;
+            --danger-color: #f44336;
+            --background-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--background-color);
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+
+        .section {
+            margin-bottom: 1.5rem;
+            padding: 1.2rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .input-group label {
+            flex: 0 0 100px;
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            flex: 1;
+            padding: 0.6rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .bidder-row {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+
+        .button {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .primary-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .danger-btn {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 0.8rem;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: left;
+        }
+
+        th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        #pasteDialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #pasteArea {
+            width: 100%;
+            height: 150px;
+            padding: 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            margin: 1rem 0;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 600px) {
+            .bidder-row {
+                grid-template-columns: 1fr;
+            }
+
+            .param-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-group label {
+                flex: 0 0 auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 参数设置 -->
+        <div class="section">
+            <h2 style="color: var(--primary-color); margin-bottom: 1.2rem;">📊 评分参数设置</h2>
+            <div class="param-grid">
+                <div class="input-group">
+                    <label>上浮扣分（%/分）</label>
+                    <input type="number" step="0.1" id="deductUp" value="0.5" oninput="calculate()">
+                </div>
+                <div class="input-group">
+                    <label>下浮加分（%/分）</label>
+                    <input type="number" step="0.1" id="deductDown" value="0.5" oninput="calculate()">
+                </div>
+                <div class="input-group">
+                    <label>开始倒扣比例（%）</label>
+                    <input type="number" step="1" id="threshold" value="10" oninput="calculate()">
+                </div>
+                <div class="input-group">
+                    <label>倒扣分（%/分）</label>
+                    <input type="number" step="0.1" id="reverseDeduct" value="0.5" oninput="calculate()">
+                </div>
+                <div class="input-group">
+                    <label>满分分值</label>
+                    <input type="number" step="1" id="fullMark" value="45" oninput="calculate()">
+                </div>
+                <div class="input-group">
+                    <label>基准价得分</label>
+                    <input type="number" step="1" id="baseScore" value="40" oninput="calculate()">
+                </div>
+            </div>
+        </div>
+
+        <!-- 投标人输入 -->
+        <div class="section">
+            <h2 style="color: var(--primary-color); margin-bottom: 1.2rem;">🏢 投标人信息录入</h2>
+            <div id="bidders">
+                <div class="bidder-row">
+                    <input type="text" class="bidName" placeholder="公司名称">
+                    <input type="number" class="bidPrice" placeholder="报价金额" required oninput="calculate()">
+                    <button class="button danger-btn" onclick="removeBidderRow(this)">删除</button>
+                </div>
+            </div>
+            <div style="margin-top: 1.2rem; display: flex; gap: 1rem;">
+                <button class="button primary-btn" onclick="addBidder()">➕ 新增投标人</button>
+                <button class="button primary-btn" onclick="showPasteDialog()">📋 批量导入数据</button>
+            </div>
+        </div>
+
+        <!-- 计算结果 -->
+        <div id="result" class="section" style="display: none;">
+            <h2 style="color: var(--primary-color); margin-bottom: 1.2rem;">📈 计算结果</h2>
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">序号</th>
+                        <th>投标人名称</th>
+                        <th>报价（元）</th>
+                        <th>基准价（元）</th>
+                        <th>偏差率</th>
+                        <th>价格得分</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button class="button primary-btn" onclick="exportToExcel()" style="margin-top: 1.2rem;">💾 导出Excel文件</button>
+        </div>
+
+        <!-- 批量导入弹窗 -->
+        <div id="pasteDialog" style="display: none;">
+            <h3 style="color: var(--primary-color); margin-bottom: 1rem;">📥 批量导入数据</h3>
+            <textarea id="pasteArea" placeholder="请输入数据（支持以下格式）：
+示例1（仅报价）：
+100.5
+200.3
+150.0
+
+示例2（名称+报价）：
+甲公司, 120.5
+乙公司 98.6
+丙公司: 150.0"></textarea>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="button danger-btn" onclick="document.getElementById('pasteDialog').style.display='none'">取消</button>
+                <button class="button primary-btn" onclick="importBids()">确认导入</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 新增投标人
+        function addBidder() {
+            const container = document.getElementById('bidders');
+            const newRow = document.createElement('div');
+            newRow.className = 'bidder-row';
+            newRow.innerHTML = `
+                <input type="text" class="bidName" placeholder="公司名称">
+                <input type="number" class="bidPrice" placeholder="报价金额" required oninput="calculate()">
+                <button class="button danger-btn" onclick="removeBidderRow(this)">删除</button>
+            `;
+            container.appendChild(newRow);
+        }
+
+        // 删除投标人
+        function removeBidderRow(btn) {
+            btn.closest('.bidder-row').remove();
+            calculate();
+        }
+
+        // 显示导入对话框
+        function showPasteDialog() {
+            document.getElementById('pasteDialog').style.display = 'block';
+            document.getElementById('pasteArea').value = '';
+        }
+
+        // 智能解析导入数据（优化版）
+        function importBids() {
+            const rawData = document.getElementById('pasteArea').value;
+            const entries = rawData.split('\n')
+               .map(line => line.trim())
+               .filter(line => line.length > 0)
+               .map(line => {
+                    // 智能识别最后出现的数字作为报价
+                    const numbers = line.match(/-?\d+\.?\d*/g) || [];
+                    const price = numbers.length > 0 ? numbers.pop() : '';
+                    const name = line.replace(price, '')
+                       .replace(/[,:;\t]/g, ' ') // 替换分隔符为空格
+                       .replace(/\s+/g, ' ')    // 合并多个空格
+                       .trim();
+
+                    return {
+                        name: name || `投标人${document.querySelectorAll('.bidder-row').length + 1}`,
+                        price: parseFloat(price) || 0
+                    };
+                })
+               .filter(entry => !isNaN(entry.price));
+
+            // 清空现有数据
+            const container = document.getElementById('bidders');
+            container.innerHTML = '';
+
+            // 生成带名称的新数据行
+            entries.forEach((entry, index) => {
+                const newRow = document.createElement('div');
+                newRow.className = 'bidder-row';
+                newRow.innerHTML = `
+                    <input type="text" class="bidName" 
+                        value="${entry.name.replace(/"/g, '&quot;')}" 
+                        placeholder="公司名称">
+                    <input type="number" class="bidPrice" 
+                        value="${entry.price}" 
+                        placeholder="报价金额" oninput="calculate()">
+                    <button class="button danger-btn" onclick="removeBidderRow(this)">删除</button>
+                `;
+                container.appendChild(newRow);
+            });
+
+            document.getElementById('pasteDialog').style.display = 'none';
+            calculate();
+        }
+
+        // 计算得分（优化版）
+        function calculate() {
+            const params = {
+                deductUp: parseFloat(document.getElementById('deductUp').value) || 0.5,
+                deductDown: parseFloat(document.getElementById('deductDown').value) || 0.5,
+                threshold: parseFloat(document.getElementById('threshold').value) || 10,
+                reverseDeduct: parseFloat(document.getElementById('reverseDeduct').value) || 0.5,
+                fullMark: parseFloat(document.getElementById('fullMark').value) || 40,
+                baseScore: parseFloat(document.getElementById('baseScore').value) || 40
+            };
+
+            // 精确获取投标人信息
+            const bidders = Array.from(document.querySelectorAll('.bidder-row'))
+               .map((row, index) => {
+                    const nameInput = row.querySelector('.bidName');
+                    const priceInput = row.querySelector('.bidPrice');
+                    return {
+                        name: nameInput.value.trim() || `投标人${index + 1}`,
+                        price: parseFloat(priceInput.value)
+                    };
+                })
+               .filter(bid => !isNaN(bid.price));
+
+            if (bidders.length === 0) {
+                document.getElementById('result').style.display = 'none';
+                return;
+            }
+
+            const B = bidders.reduce((sum, bid) => sum + bid.price, 0) / bidders.length;
+            const tbody = document.querySelector('#resultTable tbody');
+            tbody.innerHTML = '';
+
+            // 显示带名称的计算结果
+            bidders.forEach((bid, index) => {
+                const deviation = ((bid.price - B) / B * 100).toFixed(2);
+                const score = calculateScore(deviation, params);
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${bid.name}</td>
+                        <td>${bid.price.toFixed(2)}</td>
+                        <td>${B.toFixed(2)}</td>
+                        <td>${deviation}%</td>
+                        <td>${score.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('result').style.display = 'block';
+        }
+
+        // 得分计算逻辑
+        function calculateScore(deviation, params) {
+            let score = params.baseScore;
+            const numericDeviation = parseFloat(deviation);
+
+            if (numericDeviation > 0) {
+                score = Math.max(params.baseScore - (numericDeviation * params.deductUp), 0);
+            } else if (numericDeviation < 0) {
+                const absDeviation = Math.abs(numericDeviation);
+                if (absDeviation <= params.threshold) {
+                    score = Math.min(params.baseScore + (absDeviation * params.deductDown), params.fullMark);
+                } else {
+                    score = params.fullMark - (absDeviation - params.threshold) * params.reverseDeduct;
+                }
+                score = Math.min(Math.max(score, 0), params.fullMark);
+            }
+            return score;
+        }
+
+        // 导出Excel
+        function exportToExcel() {
+            const rows = document.querySelectorAll('#resultTable tr');
+            const csvContent = ['\ufeff序号,投标人名称,报价（元）,基准价（元）,偏差率,价格得分'];
+
+            rows.forEach((row, index) => {
+                if (index === 0) return;
+                const cols = Array.from(row.children).map(cell => {
+                    const text = cell.innerText;
+                    return text.includes(',') ? `"${text}"` : text;
+                });
+                csvContent.push(cols.join(','));
+            });
+
+            const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `投标评分结果_${new Date().toISOString().slice(0, 16).replace('T', '_')}.csv`;
+            link.click();
+        }
+    </script>
+</body>
+
+</html>    
