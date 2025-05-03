@@ -8,94 +8,209 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
     <title>评标费计算</title>
     <style>
-        /* 自定义样式 */
+        /* 全局样式 */
         body {
-            background-color: #f4f4f9;
+            background-color: #e5f6ff;
             font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
 
+        /* 卡片样式 */
         .card {
             background-color: #ffffff;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            animation: fadeIn 0.5s ease-in-out;
         }
 
-        .input-field {
+        /* 标题样式 */
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #374151;
+        }
+
+        /* 输入框容器样式 */
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        /* 标签样式 */
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            color: #374151;
+        }
+
+        /* 输入框样式 */
+        input {
+            width: 100%;
+            padding: 0.75rem;
             border: 1px solid #d1d5db;
             border-radius: 6px;
-            padding: 0.75rem 1rem;
-            transition: border-color 0.3s ease;
+            background-color: #f9fafb;
+            color: #374151;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .input-field:focus {
+        input:focus {
             border-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
             outline: none;
+        }
+
+        /* 错误提示样式 */
+        .error-text {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        /* 按钮容器样式 */
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* 按钮样式 */
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .calculate-btn {
             background-color: #3b82f6;
             color: #ffffff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            transition: background-color 0.3s ease;
         }
 
         .calculate-btn:hover {
             background-color: #2563eb;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
         }
 
+        .reset-btn {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+
+        .reset-btn:hover {
+            background-color: #b91c1c;
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+        }
+
+        /* 结果显示样式 */
         .result-text {
             font-size: 1.25rem;
             color: #374151;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        /* 淡入动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 
-<body class="flex justify-center items-center min-h-screen">
-    <div class="card w-full max-w-md">
-        <h1 class="text-2xl font-bold mb-4 text-center text-gray-800">评标费计算</h1>
-        <div class="mb-4">
-            <label for="start-time" class="block mb-1 text-sm font-medium text-gray-700">评标开始时间:</label>
-            <input type="datetime-local" id="start-time" class="input-field w-full">
+<body>
+    <div class="card">
+        <h1>评标费计算</h1>
+        <div class="input-group">
+            <label for="start-time">评标开始时间:</label>
+            <input type="datetime-local" id="start-time" class="input-field">
+            <p id="start-time-error" class="error-text"></p>
         </div>
-        <div class="mb-4">
-            <label for="end-time" class="block mb-1 text-sm font-medium text-gray-700">评标结束时间:</label>
-            <input type="datetime-local" id="end-time" class="input-field w-full">
+        <div class="input-group">
+            <label for="end-time">评标结束时间:</label>
+            <input type="datetime-local" id="end-time" class="input-field">
+            <p id="end-time-error" class="error-text"></p>
         </div>
-        <div class="mb-4">
-            <label for="base-fee" class="block mb-1 text-sm font-medium text-gray-700">基础评标费用:</label>
-            <input type="number" id="base-fee" class="input-field w-full">
+        <div class="input-group">
+            <label for="base-fee">基础评标费用:</label>
+            <input type="number" id="base-fee" class="input-field">
+            <p id="base-fee-error" class="error-text"></p>
         </div>
-        <div class="flex justify-center">
+        <div class="button-group">
             <button id="calculate-btn" class="calculate-btn">计算评标费</button>
+            <button id="reset-btn" class="reset-btn">重置</button>
         </div>
-        <div id="result" class="mt-6 text-center">
-            <p class="result-text"></p>
-        </div>
+        <div id="result" class="result-text"></div>
     </div>
 
     <script>
         const calculateBtn = document.getElementById('calculate-btn');
-        const resultDiv = document.getElementById('result').querySelector('p');
+        const resetBtn = document.getElementById('reset-btn');
+        const resultDiv = document.getElementById('result');
         const startTimeInput = document.getElementById('start-time');
+        const endTimeInput = document.getElementById('end-time');
         const baseFeeInput = document.getElementById('base-fee');
+        const startTimeError = document.getElementById('start-time-error');
+        const endTimeError = document.getElementById('end-time-error');
+        const baseFeeError = document.getElementById('base-fee-error');
 
         // 设置评标开始时间默认值为当天10:00
         const now = new Date();
-        now.setHours(10, 0, 0, 0);
-        startTimeInput.value = now.toISOString().slice(0, 16);
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0);
+        const pad = (num) => num.toString().padStart(2, '0');
+        startTimeInput.value = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}T${pad(start.getHours())}:${pad(start.getMinutes())}`;
+
+        // 设置评标结束时间默认值为系统当前时间
+        endTimeInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
         // 设置基础评标费用默认值为500
         baseFeeInput.value = 500;
 
         calculateBtn.addEventListener('click', () => {
-            const startTime = new Date(document.getElementById('start-time').value);
-            const endTime = new Date(document.getElementById('end-time').value);
-            const baseFee = parseFloat(document.getElementById('base-fee').value);
+            startTimeError.textContent = '';
+            endTimeError.textContent = '';
+            baseFeeError.textContent = '';
 
-            if (isNaN(startTime) || isNaN(endTime) || isNaN(baseFee)) {
-                resultDiv.textContent = '请输入有效的时间和费用。';
+            const startTime = new Date(startTimeInput.value);
+            const endTime = new Date(endTimeInput.value);
+            const baseFee = parseFloat(baseFeeInput.value);
+
+            if (isNaN(startTime)) {
+                startTimeError.textContent = '请输入有效的开始时间。';
+                return;
+            }
+
+            if (isNaN(endTime)) {
+                endTimeError.textContent = '请输入有效的结束时间。';
+                return;
+            }
+
+            if (endTime <= startTime) {
+                endTimeError.textContent = '结束时间必须晚于开始时间。';
+                return;
+            }
+
+            if (isNaN(baseFee) || baseFee < 0) {
+                baseFeeError.textContent = '请输入有效的基础评标费用。';
                 return;
             }
 
@@ -118,8 +233,29 @@
 
             resultDiv.innerHTML = `评标时长为: ${timeDifference.toFixed(0)} 小时<br>评标费用为: ${evaluationFee} 元`;
         });
+
+        resetBtn.addEventListener('click', () => {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0);
+            const pad = (num) => num.toString().padStart(2, '0');
+            startTimeInput.value = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}T${pad(start.getHours())}:${pad(start.getMinutes())}`;
+            endTimeInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            baseFeeInput.value = 500;
+            resultDiv.textContent = '';
+            startTimeError.textContent = '';
+            endTimeError.textContent = '';
+            baseFeeError.textContent = '';
+        });
+
+        // 支持键盘操作
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                calculateBtn.click();
+            } else if (event.key === 'Escape') {
+                resetBtn.click();
+            }
+        });
     </script>
 </body>
 
-</html>
-    
+</html>    
